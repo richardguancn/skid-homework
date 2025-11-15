@@ -197,6 +197,10 @@ interface Resources {
           "description": "Enable a Gemini source to process PDF files.",
           "title": "PDF uploads disabled"
         },
+        "heic-convert-failed": {
+          "description": "Export the image as JPG/PNG and try again.",
+          "title": "Couldn't convert HEIC photo"
+        },
         "working": {
           "description": "Sending {{count}} file(s) to your AI sources...",
           "title": "Working..."

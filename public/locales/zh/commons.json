@@ -75,6 +75,10 @@
       "pdf-blocked": {
         "title": "PDF 上传已禁用",
         "description": "要处理 PDF，请启用 Gemini 源。"
+      },
+      "heic-convert-failed": {
+        "title": "无法转换 HEIC 图片",
+        "description": "请将图片导出为 JPG/PNG 后再试。"
       }
     },
     "errors": {

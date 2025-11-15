@@ -75,6 +75,10 @@
       "pdf-blocked": {
         "title": "PDF uploads disabled",
         "description": "Enable a Gemini source to process PDF files."
+      },
+      "heic-convert-failed": {
+        "title": "Couldn't convert HEIC photo",
+        "description": "Export the image as JPG/PNG and try again."
       }
     },
     "errors": {
