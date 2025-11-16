@@ -96,93 +96,96 @@ export default function ScanPage() {
     [items],
   );
 
+  useEffect(() => {
+    window.addEventListener("beforeunload", (e) => {
+      if (items.length > 0) {
+        e.preventDefault();
+      }
+    });
+  }, [items.length]);
+
   // Callback to add new files to the items list using the store action.
   const appendFiles = useCallback(
-    (files: File[] | FileList, source: FileItem["source"]) => {
-      void (async () => {
-        let rejectedPdf = false;
-        const arr = Array.from(files).filter((f) => {
-          if (f.type.startsWith("image/")) {
+    async (files: File[] | FileList, source: FileItem["source"]) => {
+      let rejectedPdf = false;
+      const arr = Array.from(files).filter((f) => {
+        if (f.type.startsWith("image/")) {
+          return true;
+        }
+
+        if (f.type === "application/pdf") {
+          if (allowPdfUploads) {
             return true;
           }
-
-          if (f.type === "application/pdf") {
-            if (allowPdfUploads) {
-              return true;
-            }
-            rejectedPdf = true;
-            return false;
-          }
-
+          rejectedPdf = true;
           return false;
+        }
+
+        return false;
+      });
+
+      if (rejectedPdf) {
+        toast(t("toasts.pdf-blocked.title"), {
+          description: t("toasts.pdf-blocked.description"),
         });
+      }
 
-        if (rejectedPdf) {
-          toast(t("toasts.pdf-blocked.title"), {
-            description: t("toasts.pdf-blocked.description"),
-          });
-        }
+      if (arr.length === 0) return;
 
-        if (arr.length === 0) return;
-
-        const processedFiles = (
-          await Promise.all(
-            arr.map(async (file) => {
-              if (!isHeicFile(file)) return file;
-              try {
-                return await convertHeicToJpeg(file);
-              } catch (error) {
-                console.error(`Failed to convert HEIC file ${file.name}`, error);
-                toast(t("toasts.heic-convert-failed.title"), {
-                  description: t("toasts.heic-convert-failed.description"),
-                });
-                return null;
-              }
-            }),
-          )
-        ).filter((file): file is File => file !== null);
-
-        if (processedFiles.length === 0) return;
-
-        const initialItems: FileItem[] = processedFiles.map((file) => ({
-          id: crypto.randomUUID(),
-          file,
-          mimeType: file.type,
-          url: URL.createObjectURL(file),
-          source,
-          status:
-            file.type.startsWith("image/") && imageBinarizingRef.current
-              ? "rasterizing"
-              : "pending",
-        }));
-
-        addFileItems(initialItems);
-
-        // Image post-processing
-        if (imageBinarizingRef.current) {
-          initialItems.forEach((item) => {
-            if (item.status === "rasterizing") {
-              binarizeImageFile(item.file)
-                .then((rasterizedResult) => {
-                  updateFileItem(item.id, {
-                    status: "pending",
-                    url: rasterizedResult.url,
-                    file: rasterizedResult.file,
-                  });
-                })
-                .catch((error) => {
-                  console.error(
-                    `Failed to rasterize ${item.file.name}:`,
-                    error,
-                  );
-                  updateFileItem(item.id, {
-                    status: "failed",
-                  });
-                });
+      const processedFiles = (
+        await Promise.all(
+          arr.map(async (file) => {
+            if (!isHeicFile(file)) return file;
+            try {
+              return await convertHeicToJpeg(file);
+            } catch (error) {
+              console.error(`Failed to convert HEIC file ${file.name}`, error);
+              toast(t("toasts.heic-convert-failed.title"), {
+                description: t("toasts.heic-convert-failed.description"),
+              });
+              return null;
             }
-          });
-        }
-      })();
+          }),
+        )
+      ).filter((file): file is File => file !== null);
+
+      if (processedFiles.length === 0) return;
+
+      const initialItems: FileItem[] = processedFiles.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        mimeType: file.type,
+        url: URL.createObjectURL(file),
+        source,
+        status:
+          file.type.startsWith("image/") && imageBinarizingRef.current
+            ? "rasterizing"
+            : "pending",
+      }));
+
+      addFileItems(initialItems);
+
+      // Image post-processing
+      if (imageBinarizingRef.current) {
+        initialItems.forEach((item) => {
+          if (item.status === "rasterizing") {
+            binarizeImageFile(item.file)
+              .then((rasterizedResult) => {
+                updateFileItem(item.id, {
+                  status: "pending",
+                  url: rasterizedResult.url,
+                  file: rasterizedResult.file,
+                });
+              })
+              .catch((error) => {
+                console.error(`Failed to rasterize ${item.file.name}:`, error);
+                updateFileItem(item.id, {
+                  status: "failed",
+                });
+              });
+          }
+        });
+      }
     },
     [addFileItems, updateFileItem, allowPdfUploads, t],
   );
